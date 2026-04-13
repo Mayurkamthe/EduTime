@@ -1,0 +1,24 @@
+<%- include('../partials/layout-start') %>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="section-title mb-0">Room Timetables</h5>
+</div>
+<div class="page-card">
+  <% if (!rooms.length) { %>
+    <div class="text-center py-5 text-muted"><i class="bi bi-building fs-1 d-block mb-2"></i>No rooms found.</div>
+  <% } else { %>
+  <div class="row g-3">
+    <% rooms.forEach(r => { %>
+      <div class="col-md-3 col-sm-4 col-6">
+        <a href="/timetable/room/<%= r._id %>" class="text-decoration-none">
+          <div class="p-3 border rounded text-center">
+            <i class="bi bi-<%= r.type==='lab' ? 'cpu' : 'door-closed' %> fs-2 <%= r.type==='lab' ? 'text-success' : 'text-primary' %> d-block mb-2"></i>
+            <div class="fw-semibold" style="font-size:14px"><%= r.roomNumber %></div>
+            <small class="text-muted"><%= r.type.charAt(0).toUpperCase()+r.type.slice(1) %> &bull; <%= r.capacity %> seats</small>
+          </div>
+        </a>
+      </div>
+    <% }) %>
+  </div>
+  <% } %>
+</div>
+<%- include('../partials/layout-end') %>

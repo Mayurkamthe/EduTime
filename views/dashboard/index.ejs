@@ -1,0 +1,142 @@
+<%- include('../partials/layout-start') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h5 class="section-title mb-0">Dashboard</h5>
+    <% if (settings) { %>
+      <small class="text-muted"><%= settings.collegeName %> &mdash; <%= settings.departmentName %> &mdash; <%= settings.academicYear %></small>
+    <% } %>
+  </div>
+  <a href="/timetable" class="btn btn-primary btn-sm">
+    <i class="bi bi-grid-3x3-gap me-1"></i> Manage Timetables
+  </a>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-xl-2 col-sm-4 col-6">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#dbeafe;color:#2563eb"><i class="bi bi-book"></i></div>
+      <div>
+        <div class="stat-label">Subjects</div>
+        <div class="stat-value"><%= stats.subjectCount %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-sm-4 col-6">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#dcfce7;color:#16a34a"><i class="bi bi-person-badge"></i></div>
+      <div>
+        <div class="stat-label">Professors</div>
+        <div class="stat-value"><%= stats.professorCount %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-sm-4 col-6">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#fef9c3;color:#ca8a04"><i class="bi bi-building"></i></div>
+      <div>
+        <div class="stat-label">Rooms</div>
+        <div class="stat-value"><%= stats.roomCount %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-sm-4 col-6">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#fce7f3;color:#db2777"><i class="bi bi-people"></i></div>
+      <div>
+        <div class="stat-label">Classes</div>
+        <div class="stat-value"><%= stats.classCount %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-sm-4 col-6">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#ede9fe;color:#7c3aed"><i class="bi bi-calendar-check"></i></div>
+      <div>
+        <div class="stat-label">Timetables</div>
+        <div class="stat-value"><%= stats.timetableCount %></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Setup Guide -->
+<% if (stats.subjectCount === 0 || stats.professorCount === 0 || stats.classCount === 0) { %>
+<div class="page-card mb-4">
+  <h6 class="fw-bold mb-3"><i class="bi bi-lightning-charge text-warning me-1"></i> Setup Guide</h6>
+  <div class="row g-2">
+    <div class="col-md-3">
+      <div class="p-3 rounded border <%= stats.subjectCount > 0 ? 'border-success bg-light' : 'border-warning' %>">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-<%= stats.subjectCount > 0 ? 'check-circle-fill text-success' : 'circle text-warning' %> fs-5"></i>
+          <div>
+            <div class="fw-semibold" style="font-size:13px">Step 1: Add Subjects</div>
+            <a href="/subjects/create" class="small text-primary">Add subjects</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="p-3 rounded border <%= stats.professorCount > 0 ? 'border-success bg-light' : 'border-warning' %>">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-<%= stats.professorCount > 0 ? 'check-circle-fill text-success' : 'circle text-warning' %> fs-5"></i>
+          <div>
+            <div class="fw-semibold" style="font-size:13px">Step 2: Add Professors</div>
+            <a href="/professors/create" class="small text-primary">Add professors</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="p-3 rounded border <%= stats.roomCount > 0 ? 'border-success bg-light' : 'border-warning' %>">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-<%= stats.roomCount > 0 ? 'check-circle-fill text-success' : 'circle text-warning' %> fs-5"></i>
+          <div>
+            <div class="fw-semibold" style="font-size:13px">Step 3: Add Rooms</div>
+            <a href="/rooms/create" class="small text-primary">Add rooms</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="p-3 rounded border <%= stats.classCount > 0 ? 'border-success bg-light' : 'border-warning' %>">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-<%= stats.classCount > 0 ? 'check-circle-fill text-success' : 'circle text-warning' %> fs-5"></i>
+          <div>
+            <div class="fw-semibold" style="font-size:13px">Step 4: Add Classes</div>
+            <a href="/classes/create" class="small text-primary">Add classes</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- Quick Links -->
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="page-card h-100">
+      <h6 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap me-1 text-primary"></i> Generate Timetable</h6>
+      <p class="text-muted small">Auto-generate constraint-based timetable with batch-wise lab scheduling.</p>
+      <a href="/timetable" class="btn btn-primary btn-sm"><i class="bi bi-play-fill me-1"></i> Go to Timetable</a>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="page-card h-100">
+      <h6 class="fw-bold mb-3"><i class="bi bi-gear me-1 text-secondary"></i> College Settings</h6>
+      <p class="text-muted small">Configure working days, lecture duration, break times and academic year.</p>
+      <a href="/settings" class="btn btn-outline-secondary btn-sm"><i class="bi bi-sliders me-1"></i> Configure</a>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="page-card h-100">
+      <h6 class="fw-bold mb-3"><i class="bi bi-download me-1 text-success"></i> Export</h6>
+      <p class="text-muted small">Export timetables as PDF or Excel for printing and distribution.</p>
+      <a href="/timetable" class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-arrow-down me-1"></i> Export TT</a>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/layout-end') %>

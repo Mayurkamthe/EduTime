@@ -1,0 +1,69 @@
+<%- include('../partials/layout-start') %>
+<div class="d-flex align-items-center gap-2 mb-4">
+  <a href="/subjects" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <h5 class="section-title mb-0"><%= subject ? 'Edit Subject' : 'Add Subject' %></h5>
+</div>
+<div class="page-card" style="max-width:600px">
+  <form action="<%= action %>" method="POST">
+    <div class="row g-3">
+      <div class="col-md-8">
+        <label class="form-label">Subject Name *</label>
+        <input type="text" name="name" class="form-control" value="<%= subject ? subject.name : '' %>" required placeholder="e.g. Data Structures">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Subject Code *</label>
+        <input type="text" name="code" class="form-control" value="<%= subject ? subject.code : '' %>" required placeholder="e.g. SE211">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Year *</label>
+        <select name="year" class="form-select" required>
+          <% ['FE','SE','TE','BE'].forEach(y => { %>
+            <option value="<%= y %>" <%= subject && subject.year===y ? 'selected' : '' %>><%= y %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Semester</label>
+        <select name="semester" class="form-select">
+          <% for(let i=1;i<=8;i++) { %>
+            <option value="<%= i %>" <%= subject && subject.semester===i ? 'selected' : '' %>>Sem <%= i %></option>
+          <% } %>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Type *</label>
+        <select name="type" class="form-select" id="typeSelect" required>
+          <% ['theory','lab','tutorial'].forEach(t => { %>
+            <option value="<%= t %>" <%= subject && subject.type===t ? 'selected' : '' %>><%= t.charAt(0).toUpperCase()+t.slice(1) %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Weekly Hours *</label>
+        <input type="number" name="weeklyHours" class="form-control" value="<%= subject ? subject.weeklyHours : 3 %>" min="1" max="12" required>
+      </div>
+      <div class="col-md-4" id="continuousSlotsDiv" style="<%= (!subject || subject.type !== 'lab') ? 'display:none' : '' %>">
+        <label class="form-label">Continuous Slots (Lab)</label>
+        <select name="continuousSlots" class="form-select">
+          <option value="2" <%= subject && subject.continuousSlots===2 ? 'selected' : '' %>>2 (2 hrs)</option>
+          <option value="3" <%= subject && subject.continuousSlots===3 ? 'selected' : '' %>>3 (3 hrs)</option>
+        </select>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Preferred Slots <small class="text-muted">(optional, comma-separated)</small></label>
+        <input type="text" name="preferredSlots" class="form-control" value="<%= subject && subject.preferredSlots ? subject.preferredSlots.join(', ') : '' %>" placeholder="e.g. morning, afternoon">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save Subject</button>
+      <a href="/subjects" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+<script>
+  document.getElementById('typeSelect').addEventListener('change', function() {
+    document.getElementById('continuousSlotsDiv').style.display = this.value === 'lab' ? '' : 'none';
+  });
+</script>
+<%- include('../partials/layout-end') %>

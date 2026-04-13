@@ -1,0 +1,50 @@
+<%- include('../partials/layout-start') %>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="section-title mb-0">Classes &amp; Divisions</h5>
+  <a href="/classes/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Class</a>
+</div>
+<div class="page-card">
+  <% if (!classes.length) { %>
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-people fs-1 d-block mb-2"></i>No classes found. <a href="/classes/create">Add one</a>.
+    </div>
+  <% } else { %>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-dark">
+        <tr><th>#</th><th>Class</th><th>Students</th><th>Batches</th><th>Subjects</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        <% classes.forEach((c, i) => { %>
+        <tr>
+          <td class="text-muted"><%= i+1 %></td>
+          <td>
+            <span class="fw-bold fs-6"><%= c.year %>-<%= c.division %></span>
+          </td>
+          <td><%= c.totalStudents %></td>
+          <td>
+            <% c.batches.forEach(b => { %>
+              <span class="badge bg-light text-dark border me-1">Batch <%= b.name %> (<%= b.studentCount %>)</span>
+            <% }) %>
+          </td>
+          <td>
+            <% c.subjects.slice(0,3).forEach(s => { %>
+              <span class="badge <%= s.type==='lab' ? 'badge-lab' : 'badge-theory' %> me-1"><%= s.code %></span>
+            <% }) %>
+            <% if (c.subjects.length > 3) { %><small class="text-muted">+<%= c.subjects.length-3 %></small><% } %>
+          </td>
+          <td>
+            <a href="/timetable/class/<%= c._id %>" class="btn btn-outline-success btn-sm"><i class="bi bi-calendar3"></i></a>
+            <a href="/classes/<%= c._id %>/edit" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i></a>
+            <form action="/classes/<%= c._id %>?_method=DELETE" method="POST" class="d-inline">
+              <button class="btn btn-outline-danger btn-sm confirm-delete"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</div>
+<%- include('../partials/layout-end') %>

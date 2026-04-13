@@ -1,0 +1,46 @@
+<%- include('../partials/layout-start') %>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="section-title mb-0">Subjects</h5>
+  <a href="/subjects/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Subject</a>
+</div>
+<div class="page-card">
+  <% if (!subjects.length) { %>
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-book fs-1 d-block mb-2"></i>No subjects found. <a href="/subjects/create">Add one</a>.
+    </div>
+  <% } else { %>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th><th>Code</th><th>Name</th><th>Year</th><th>Type</th>
+          <th>Weekly Hrs</th><th>Sem</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% subjects.forEach((s, i) => { %>
+        <tr>
+          <td class="text-muted"><%= i+1 %></td>
+          <td><code><%= s.code %></code></td>
+          <td class="fw-semibold"><%= s.name %></td>
+          <td><span class="badge bg-secondary"><%= s.year %></span></td>
+          <td>
+            <span class="badge badge-<%= s.type %>"><%= s.type.charAt(0).toUpperCase()+s.type.slice(1) %></span>
+            <% if (s.type === 'lab') { %><small class="text-muted ms-1">(<%= s.continuousSlots %> slots)</small><% } %>
+          </td>
+          <td><%= s.weeklyHours %> hrs</td>
+          <td><%= s.semester || '-' %></td>
+          <td>
+            <a href="/subjects/<%= s._id %>/edit" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i></a>
+            <form action="/subjects/<%= s._id %>?_method=DELETE" method="POST" class="d-inline">
+              <button class="btn btn-outline-danger btn-sm confirm-delete"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</div>
+<%- include('../partials/layout-end') %>

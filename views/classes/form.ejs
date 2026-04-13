@@ -1,0 +1,58 @@
+<%- include('../partials/layout-start') %>
+<div class="d-flex align-items-center gap-2 mb-4">
+  <a href="/classes" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <h5 class="section-title mb-0"><%= classDoc ? 'Edit Class' : 'Add Class' %></h5>
+</div>
+<div class="page-card" style="max-width:700px">
+  <form action="<%= action %>" method="POST">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Year *</label>
+        <select name="year" class="form-select" required>
+          <% ['FE','SE','TE','BE'].forEach(y => { %>
+            <option value="<%= y %>" <%= classDoc && classDoc.year===y ? 'selected' : '' %>><%= y %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Division *</label>
+        <input type="text" name="division" class="form-control" value="<%= classDoc ? classDoc.division : '' %>" required placeholder="e.g. A">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Total Students *</label>
+        <input type="number" name="totalStudents" class="form-control" value="<%= classDoc ? classDoc.totalStudents : 60 %>" min="1" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Lab Batches</label>
+        <select name="batchCount" class="form-select">
+          <option value="2" <%= classDoc && classDoc.batchCount===2 ? 'selected' : '' %>>2 Batches</option>
+          <option value="3" <%= classDoc && classDoc.batchCount===3 ? 'selected' : '' %>>3 Batches</option>
+        </select>
+        <div class="form-text">Auto-splits students equally</div>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Assign Subjects</label>
+        <div class="row g-2 p-3 border rounded" style="max-height:250px;overflow-y:auto;">
+          <% subjects.forEach(s => { %>
+            <div class="col-md-4 col-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="subjects" value="<%= s._id %>" id="s_<%= s._id %>"
+                  <%= classDoc && classDoc.subjects.some(cs => cs._id ? cs._id.toString()===s._id.toString() : cs.toString()===s._id.toString()) ? 'checked' : '' %>>
+                <label class="form-check-label" for="s_<%= s._id %>">
+                  <span class="badge badge-<%= s.type %> me-1"><%= s.type.charAt(0).toUpperCase() %></span>
+                  <code><%= s.code %></code> <small class="text-muted d-block ms-3"><%= s.name %> (<%= s.year %>)</small>
+                </label>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save Class</button>
+      <a href="/classes" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+<%- include('../partials/layout-end') %>

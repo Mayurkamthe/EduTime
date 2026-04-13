@@ -1,0 +1,11 @@
+<nav class="top-navbar d-flex align-items-center px-4">
+  <button class="btn btn-sm btn-link text-secondary p-0 me-3" id="sidebarToggle">
+    <i class="bi bi-list fs-5"></i>
+  </button>
+  <h6 class="mb-0 fw-semibold text-dark"><%= title %></h6>
+  <div class="ms-auto d-flex align-items-center gap-2">
+    <% if (typeof settings !== 'undefined' && settings) { %>
+      <span class="badge bg-light text-dark border"><%= settings.academicYear %></span>
+    <% } %>
+  </div>
+</nav>

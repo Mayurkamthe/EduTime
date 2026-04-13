@@ -1,0 +1,45 @@
+<%- include('../partials/layout-start') %>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="section-title mb-0">Professors</h5>
+  <a href="/professors/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Professor</a>
+</div>
+<div class="page-card">
+  <% if (!professors.length) { %>
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-person-badge fs-1 d-block mb-2"></i>No professors found. <a href="/professors/create">Add one</a>.
+    </div>
+  <% } else { %>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-dark">
+        <tr><th>#</th><th>Name</th><th>Email</th><th>Subjects</th><th>Max/Day</th><th>Days</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        <% professors.forEach((p, i) => { %>
+        <tr>
+          <td class="text-muted"><%= i+1 %></td>
+          <td class="fw-semibold"><%= p.name %></td>
+          <td class="text-muted"><%= p.email %></td>
+          <td>
+            <% p.subjects.slice(0,3).forEach(s => { %>
+              <span class="badge bg-light text-dark border me-1"><%= s.code %></span>
+            <% }) %>
+            <% if (p.subjects.length > 3) { %><small class="text-muted">+<%= p.subjects.length-3 %> more</small><% } %>
+          </td>
+          <td><span class="badge bg-info text-dark"><%= p.maxLecturesPerDay %></span></td>
+          <td><small class="text-muted"><%= p.availability.days.map(d=>d.substr(0,3)).join(', ') %></small></td>
+          <td>
+            <a href="/professors/<%= p._id %>/edit" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i></a>
+            <a href="/timetable/professor/<%= p._id %>" class="btn btn-outline-success btn-sm"><i class="bi bi-calendar3"></i></a>
+            <form action="/professors/<%= p._id %>?_method=DELETE" method="POST" class="d-inline">
+              <button class="btn btn-outline-danger btn-sm confirm-delete"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</div>
+<%- include('../partials/layout-end') %>

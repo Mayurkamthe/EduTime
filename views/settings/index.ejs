@@ -1,0 +1,130 @@
+<%- include('../partials/layout-start') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="section-title mb-0">College Settings</h5>
+</div>
+
+<div class="row g-4">
+  <!-- Settings Form -->
+  <div class="col-lg-8">
+    <div class="page-card">
+      <h6 class="fw-bold mb-3"><i class="bi bi-gear me-1 text-primary"></i> General Configuration</h6>
+      <form action="/settings" method="POST">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">College Name *</label>
+            <input type="text" name="collegeName" class="form-control" value="<%= settings.collegeName %>" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Department Name *</label>
+            <input type="text" name="departmentName" class="form-control" value="<%= settings.departmentName %>" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Academic Year *</label>
+            <input type="text" name="academicYear" class="form-control" value="<%= settings.academicYear %>" required placeholder="e.g. 2024-25">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Start Time</label>
+            <input type="time" name="startTime" class="form-control" value="<%= settings.startTime %>">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">End Time</label>
+            <input type="time" name="endTime" class="form-control" value="<%= settings.endTime %>">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Lecture Duration (mins)</label>
+            <input type="number" name="lectureDuration" class="form-control" value="<%= settings.lectureDuration %>" min="30" max="90">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Lab Duration (mins)</label>
+            <select name="labDuration" class="form-select">
+              <option value="120" <%= settings.labDuration===120 ? 'selected':'' %>>120 mins (2 hrs)</option>
+              <option value="180" <%= settings.labDuration===180 ? 'selected':'' %>>180 mins (3 hrs)</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Max Lectures/Day</label>
+            <input type="number" name="maxLecturesPerDay" class="form-control" value="<%= settings.maxLecturesPerDay %>" min="1" max="10">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Break Start</label>
+            <input type="time" name="breakStart" class="form-control" value="<%= settings.breakStart %>">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Break End</label>
+            <input type="time" name="breakEnd" class="form-control" value="<%= settings.breakEnd %>">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Working Days</label>
+            <div class="d-flex flex-wrap gap-3">
+              <% days.forEach(d => { %>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="workingDays" value="<%= d %>" id="wd_<%= d %>"
+                    <%= settings.workingDays.includes(d) ? 'checked' : '' %>>
+                  <label class="form-check-label fw-semibold" for="wd_<%= d %>"><%= d.substr(0,3) %></label>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i> Save Settings
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- User Management -->
+  <div class="col-lg-4">
+    <div class="page-card">
+      <h6 class="fw-bold mb-3"><i class="bi bi-people me-1 text-primary"></i> System Users</h6>
+
+      <!-- Add User Form -->
+      <form action="/settings/users" method="POST" class="mb-3">
+        <div class="mb-2">
+          <input type="text" name="name" class="form-control form-control-sm" placeholder="Full Name" required>
+        </div>
+        <div class="mb-2">
+          <input type="email" name="email" class="form-control form-control-sm" placeholder="Email" required>
+        </div>
+        <div class="mb-2">
+          <input type="text" name="department" class="form-control form-control-sm" placeholder="Department">
+        </div>
+        <div class="mb-2">
+          <select name="role" class="form-select form-select-sm">
+            <option value="hod">HoD</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+          <i class="bi bi-person-plus me-1"></i> Add User
+        </button>
+      </form>
+
+      <div class="divider"></div>
+
+      <!-- Users List -->
+      <% if (users.length) { %>
+        <% users.forEach(u => { %>
+          <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+            <div>
+              <div class="fw-semibold" style="font-size:13px"><%= u.name %></div>
+              <small class="text-muted"><%= u.email %></small><br>
+              <span class="badge bg-<%= u.role==='admin' ? 'danger' : 'primary' %> mt-1"><%= u.role.toUpperCase() %></span>
+            </div>
+            <form action="/settings/users/<%= u._id %>?_method=DELETE" method="POST">
+              <button class="btn btn-outline-danger btn-sm confirm-delete" <%= u._id.toString() === user._id.toString() ? 'disabled title="Cannot delete yourself"' : '' %>>
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <p class="text-muted small text-center">No users yet.</p>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/layout-end') %>

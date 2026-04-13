@@ -1,0 +1,77 @@
+<%- include('../partials/layout-start') %>
+<div class="d-flex align-items-center gap-2 mb-4">
+  <a href="/timetable/all-rooms" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <div>
+    <h5 class="section-title mb-0">Room Timetable: <%= room.roomNumber %></h5>
+    <small class="text-muted"><%= room.type.charAt(0).toUpperCase()+room.type.slice(1) %> &mdash; Capacity: <%= room.capacity %></small>
+  </div>
+</div>
+
+<%
+  const grid = {};
+  for (const day of days) { grid[day] = {}; }
+  for (const slot of roomSlots) {
+    if (!grid[slot.day]) continue;
+    grid[slot.day][slot.slotIndex] = slot;
+  }
+%>
+
+<div class="page-card p-0" style="overflow-x:auto;">
+  <table class="tt-table">
+    <thead>
+      <tr>
+        <th style="width:80px">Day</th>
+        <% daySlots.forEach(slot => { %>
+          <th>
+            <% if (slot.isBreak) { %>Break
+            <% } else { %><%= slot.startTime %><br><small><%= slot.endTime %></small><% } %>
+          </th>
+        <% }) %>
+      </tr>
+    </thead>
+    <tbody>
+      <% days.forEach(day => { %>
+        <tr>
+          <td class="day-header"><%= day.substr(0,3).toUpperCase() %></td>
+          <% daySlots.forEach(slot => { %>
+            <% if (slot.isBreak) { %>
+              <td class="tt-cell-break">Break</td>
+            <% } else {
+              const entry = grid[day][slot.index];
+              const cellClass = entry ? `tt-cell-${entry.type}` : 'tt-cell-free';
+            %>
+              <td class="tt-cell <%= cellClass %>">
+                <% if (entry && entry.subject) { %>
+                  <div class="subj"><%= entry.subject.code || '' %></div>
+                  <div class="prof"><%= entry.professor ? entry.professor.name.split(' ').pop() : '' %></div>
+                  <% if (entry.batch) { %><div class="batch">B-<%= entry.batch %></div><% } %>
+                <% } %>
+              </td>
+            <% } %>
+          <% }) %>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Utilisation -->
+<div class="page-card mt-4">
+  <h6 class="fw-bold mb-2">Room Utilisation</h6>
+  <%
+    const totalTeachingSlots = days.length * daySlots.filter(s=>!s.isBreak).length;
+    const occupied = roomSlots.filter(s => s.type !== 'break').length;
+    const pct = totalTeachingSlots > 0 ? Math.round(occupied/totalTeachingSlots*100) : 0;
+  %>
+  <div class="d-flex align-items-center gap-3">
+    <div style="font-size:32px;font-weight:700;color:#0d6efd"><%= pct %>%</div>
+    <div>
+      <div class="progress" style="width:200px;height:10px;">
+        <div class="progress-bar" style="width:<%= pct %>%"></div>
+      </div>
+      <small class="text-muted"><%= occupied %> of <%= totalTeachingSlots %> slots occupied</small>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/layout-end') %>
