@@ -1,5 +1,57 @@
 const User = require('../models/User');
 
+// GET /register
+exports.getRegister = (req, res) => {
+  if (req.session.user) return res.redirect('/dashboard');
+  res.render('auth/register', { title: 'Register', formData: {} });
+};
+
+// POST /register
+exports.postRegister = async (req, res) => {
+  const { name, email, password, confirmPassword, role, department } = req.body;
+  const formData = { name, email, role, department };
+
+  try {
+    console.log(`[AUTH] Register attempt for: ${email}`);
+
+    if (!name || !email || !password || !confirmPassword) {
+      req.flash('error', 'All required fields must be filled.');
+      return res.render('auth/register', { title: 'Register', formData });
+    }
+    if (password !== confirmPassword) {
+      req.flash('error', 'Passwords do not match.');
+      return res.render('auth/register', { title: 'Register', formData });
+    }
+    if (password.length < 6) {
+      req.flash('error', 'Password must be at least 6 characters.');
+      return res.render('auth/register', { title: 'Register', formData });
+    }
+
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) {
+      console.warn(`[AUTH] Email already registered: ${email}`);
+      req.flash('error', 'An account with this email already exists.');
+      return res.render('auth/register', { title: 'Register', formData });
+    }
+
+    const user = await User.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password,
+      role: role || 'hod',
+      department: department ? department.trim() : undefined
+    });
+
+    console.log(`[AUTH] ✅ New user registered: ${user.email} (${user.role})`);
+    req.flash('success', 'Account created successfully! Please log in.');
+    res.redirect('/login');
+  } catch (err) {
+    console.error('[AUTH] ❌ Register error:', err);
+    req.flash('error', 'Registration failed. Please try again.');
+    res.render('auth/register', { title: 'Register', formData });
+  }
+};
+
 // GET /login
 exports.getLogin = (req, res) => {
   if (req.session.user) return res.redirect('/dashboard');
