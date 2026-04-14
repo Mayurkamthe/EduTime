@@ -3,17 +3,18 @@
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div class="d-flex align-items-center gap-2">
     <a href="/timetable" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h5 class="section-title mb-0">
-      Timetable: <%= classDoc.year %>-<%= classDoc.division %>
-    </h5>
+    <div>
+      <h5 class="section-title mb-0">Class Timetable: <%= classDoc.year %>-<%= classDoc.division %></h5>
+      <% if(timetable){ %><small class="text-muted">Generated: <%= new Date(timetable.generatedAt).toLocaleDateString('en-IN') %></small><% } %>
+    </div>
   </div>
-  <% if (timetable) { %>
+  <% if (timetable && timetable.isGenerated) { %>
   <div class="d-flex gap-2 flex-wrap">
     <a href="/export/pdf?classId=<%= classDoc._id %>" class="btn btn-danger btn-sm" target="_blank">
-      <i class="bi bi-file-pdf me-1"></i>Export PDF
+      <i class="bi bi-file-pdf me-1"></i>PDF
     </a>
     <a href="/export/excel?classId=<%= classDoc._id %>" class="btn btn-success btn-sm">
-      <i class="bi bi-file-excel me-1"></i>Export Excel
+      <i class="bi bi-file-excel me-1"></i>Excel
     </a>
     <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-printer me-1"></i>Print
@@ -25,119 +26,161 @@
 <% if (!timetable || !timetable.isGenerated) { %>
   <div class="page-card text-center py-5 text-muted">
     <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
-    No timetable generated for this class yet.
-    <a href="/timetable" class="d-block mt-2">Generate one</a>
+    No timetable generated yet. <a href="/timetable">Generate one</a>.
   </div>
 <% } else { %>
 
+<!-- SPPU Header Info -->
+<div class="page-card mb-3 py-2">
+  <div class="row text-center">
+    <div class="col-md-3 border-end"><small class="text-muted d-block">Record No.</small><strong>4/2/2</strong></div>
+    <div class="col-md-3 border-end"><small class="text-muted d-block">Academic Year</small><strong><%= settings.academicYear %></strong></div>
+    <div class="col-md-3 border-end"><small class="text-muted d-block">Class</small><strong><%= classDoc.year %>-<%= classDoc.division %></strong></div>
+    <div class="col-md-3"><small class="text-muted d-block">W.E.F.</small><strong><%= new Date().toLocaleDateString('en-IN') %></strong></div>
+  </div>
+</div>
+
 <!-- Legend -->
-<div class="d-flex gap-3 mb-3 flex-wrap">
-  <span><span class="badge badge-theory">Theory</span></span>
-  <span><span class="badge badge-lab">Lab</span></span>
-  <span><span class="badge badge-tutorial">Tutorial</span></span>
-  <span class="text-muted small"><i class="bi bi-lock-fill me-1"></i>Locked slot</span>
+<div class="d-flex gap-3 mb-2 flex-wrap align-items-center">
+  <span class="fw-semibold" style="font-size:12px">Legend:</span>
+  <span class="badge badge-theory px-2">Theory</span>
+  <span class="badge badge-lab px-2">Lab / Practical</span>
+  <span class="badge badge-tutorial px-2">Tutorial</span>
 </div>
 
 <%
-  // Build grid: day -> slotIndex -> slot
   const teaching = daySlots.filter(s => !s.isBreak);
-  const breakSlots = daySlots.filter(s => s.isBreak);
   const grid = {};
-  for (const day of days) {
-    grid[day] = {};
-  }
+  for (const day of days) { grid[day] = {}; }
   for (const slot of timetable.slots) {
     if (!grid[slot.day]) continue;
-    if (!grid[slot.day][slot.slotIndex]) {
-      grid[slot.day][slot.slotIndex] = [];
-    }
+    if (!grid[slot.day][slot.slotIndex]) grid[slot.day][slot.slotIndex] = [];
     grid[slot.day][slot.slotIndex].push(slot);
   }
 %>
 
-<div class="page-card p-0" style="overflow-x:auto;">
-  <div class="tt-wrapper"><table class="tt-table">
+<!-- Timetable Grid -->
+<div class="page-card p-0 mb-4" style="overflow-x:auto;">
+  <table class="tt-table" style="font-size:11px">
     <thead>
       <tr>
-        <th style="width:80px">Day</th>
+        <th style="width:72px;background:#1a1f2e">Day / Time</th>
         <% daySlots.forEach(slot => { %>
-          <th>
-            <% if (slot.isBreak) { %>
-              Break
-            <% } else { %>
-              <%= slot.startTime %><br><small><%= slot.endTime %></small>
-            <% } %>
+          <th style="background:#1a1f2e;min-width:95px">
+            <% if (slot.isBreak) { %>BREAK
+            <% } else { %><%= slot.startTime %><br><small style="font-size:9px;opacity:.8"><%= slot.endTime %></small><% } %>
           </th>
         <% }) %>
       </tr>
     </thead>
     <tbody>
-      <% days.forEach(day => { %>
+      <% days.forEach((day, di) => { %>
         <tr>
-          <td class="day-header"><%= day.substr(0,3).toUpperCase() %></td>
+          <td style="background:#1a1f2e;color:#fff;font-weight:700;font-size:11px"><%= day.substr(0,3).toUpperCase() %></td>
           <% daySlots.forEach(slot => { %>
             <% if (slot.isBreak) { %>
-              <td class="tt-cell-break">Break</td>
+              <td class="tt-cell-break" style="font-size:10px;font-style:italic">
+                LUNCH<br>BREAK<br>
+                <span style="font-size:9px"><%= slot.startTime %>-<%= slot.endTime %></span>
+              </td>
             <% } else {
-              const entries = grid[day][slot.index] || [];
-              const entry = entries[0];
-              // If lab continuation, we still show it
-              const cellClass = entry ? (entry.isLabContinuation ? 'tt-cell-lab' : `tt-cell-${entry.type}`) : 'tt-cell-free';
+              const entries = (grid[day] && grid[day][slot.index]) || [];
+              const hasContent = entries.some(e => e.subject);
+              const firstType = hasContent ? entries[0].type : '';
+              const cellCls = hasContent ? `tt-cell-${firstType}` : 'tt-cell-free';
             %>
-              <td class="tt-cell <%= cellClass %> <%= entry && entry.isLocked ? 'tt-locked' : '' %>">
-                <% if (entry && entry.subject) { %>
+              <td class="<%= cellCls %>" style="padding:4px;vertical-align:top">
+                <% entries.filter(e => e.subject).forEach((e, ei) => { %>
+                  <% if (ei > 0) { %><hr style="margin:2px 0;border-color:#ccc"><% } %>
                   <div class="tt-cell">
-                    <div class="subj">
-                      <%= entry.subject.code || entry.subject.name.substr(0,8) %>
-                      <% if (entry.isLocked) { %><i class="bi bi-lock-fill ms-1" style="font-size:9px"></i><% } %>
-                    </div>
-                    <div class="prof"><%= entry.professor ? entry.professor.name.split(' ').pop() : '' %></div>
-                    <div class="room"><%= entry.room ? entry.room.roomNumber : '' %></div>
-                    <% if (entry.batch) { %><div class="batch">B-<%= entry.batch %></div><% } %>
-                    <% if (entries.length > 1) { %>
-                      <% entries.slice(1).forEach(e2 => { %>
-                        <hr class="my-1">
-                        <div class="subj"><%= e2.subject ? e2.subject.code : '' %></div>
-                        <div class="batch">B-<%= e2.batch %></div>
-                        <div class="room"><%= e2.room ? e2.room.roomNumber : '' %></div>
-                      <% }) %>
-                    <% } %>
+                    <div class="subj"><%= e.subject.code || e.subject.name.substr(0,8) %></div>
+                    <div class="prof"><%= e.professor ? e.professor.name.split(' ').pop() : '' %></div>
+                    <div class="room"><%= e.room ? e.room.roomNumber : '' %></div>
+                    <% if (e.batch) { %><div class="batch">B-<%= e.batch %></div><% } %>
                   </div>
-                <% } %>
+                <% }) %>
               </td>
             <% } %>
           <% }) %>
         </tr>
       <% }) %>
     </tbody>
-  </table></div>
+  </table>
 </div>
 
-<!-- Subject Summary -->
-<div class="page-card mt-4">
-  <h6 class="fw-bold mb-3">Subject Summary</h6>
-  <div class="row g-2">
-    <%
-      const subjCount = {};
-      for (const slot of timetable.slots) {
-        if (slot.subject && slot.type !== 'break') {
-          const key = slot.subject._id ? slot.subject._id.toString() : slot.subject.toString();
-          if (!subjCount[key]) subjCount[key] = { name: slot.subject.name || 'N/A', code: slot.subject.code || '', count: 0, type: slot.type };
-          subjCount[key].count++;
-        }
-      }
-    %>
-    <% Object.values(subjCount).forEach(s => { %>
-      <div class="col-md-3 col-6">
-        <div class="p-2 border rounded text-center">
-          <code class="d-block"><%= s.code %></code>
-          <small class="text-muted"><%= s.name %></small>
-          <div class="badge badge-<%= s.type %> mt-1"><%= s.count %> slots</div>
-        </div>
-      </div>
-    <% }) %>
+<!-- Subject Details Table (SPPU style bottom legend) -->
+<%
+  const seenSubj = new Set();
+  const subjRows = [];
+  for (const slot of timetable.slots) {
+    if (!slot.subject || seenSubj.has(String(slot.subject._id || slot.subject))) continue;
+    seenSubj.add(String(slot.subject._id || slot.subject));
+    subjRows.push(slot);
+  }
+%>
+<% if (subjRows.length) { %>
+<div class="page-card p-0">
+  <table class="table table-bordered table-sm mb-0" style="font-size:12px">
+    <thead style="background:#1a1f2e;color:#fff">
+      <tr>
+        <th class="text-center">Choice Code</th>
+        <th>Subject Name</th>
+        <th>Faculty Name</th>
+        <th class="text-center">TH / PR</th>
+        <th class="text-center">Location</th>
+        <th class="text-center">Batch</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% subjRows.forEach((slot, i) => { %>
+        <tr style="background:<%= i%2===0 ? '#f8faff' : '#fff' %>">
+          <td class="text-center"><code><%= slot.subject.code || '-' %></code></td>
+          <td><%= slot.subject.name %></td>
+          <td><%= slot.professor ? slot.professor.name : '-' %></td>
+          <td class="text-center">
+            <span class="badge <%= slot.type==='lab' ? 'badge-lab' : 'badge-theory' %>">
+              <%= slot.type === 'lab' ? 'PR' : 'TH' %>
+            </span>
+          </td>
+          <td class="text-center"><%= slot.room ? slot.room.roomNumber : '-' %></td>
+          <td class="text-center"><%= slot.batch ? `B-${slot.batch}` : 'All' %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Footer signatures -->
+<div class="row mt-4 px-2">
+  <div class="col-4 text-start">
+    <div style="border-top:1px solid #333;padding-top:4px;font-size:12px">
+      <strong>Prof. __________________</strong><br>
+      <span class="text-muted">Timetable Incharge</span>
+    </div>
+  </div>
+  <div class="col-4 text-center">
+    <div style="border-top:1px solid #333;padding-top:4px;font-size:12px">
+      <strong>Dr. __________________</strong><br>
+      <span class="text-muted">Head of Department</span>
+    </div>
+  </div>
+  <div class="col-4 text-end">
+    <div style="border-top:1px solid #333;padding-top:4px;font-size:12px">
+      <strong>Dr. __________________</strong><br>
+      <span class="text-muted">Principal</span>
+    </div>
   </div>
 </div>
+<% } %>
 
 <% } %>
+
+<style>
+@media print {
+  .sidebar, .top-navbar, .btn, .d-flex.gap-2 { display: none !important; }
+  .main-content { margin-left: 0 !important; }
+  .page-card { box-shadow: none !important; border: 1px solid #ddd; }
+}
+</style>
+
 <%- include('../partials/layout-end') %>
