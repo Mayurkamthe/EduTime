@@ -1,8 +1,4 @@
 const User = require('../models/User');
-const { sendOTPEmail } = require('../config/mailer');
-
-// Generate 6-digit OTP
-const generateOTP = () => String(Math.floor(100000 + Math.random() * 900000));
 
 // GET /login
 exports.getLogin = (req, res) => {
@@ -10,92 +6,55 @@ exports.getLogin = (req, res) => {
   res.render('auth/login', { title: 'Login' });
 };
 
-// POST /login - Send OTP
+// POST /login - Password based
 exports.postLogin = async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email || !email.includes('@')) {
-      req.flash('error', 'Please enter a valid email address.');
+    const { email, password } = req.body;
+    console.log(`[AUTH] Login attempt for: ${email}`);
+
+    if (!email || !password) {
+      req.flash('error', 'Email and password are required.');
       return res.redirect('/login');
     }
 
     const user = await User.findOne({ email: email.toLowerCase(), isActive: true });
     if (!user) {
-      req.flash('error', 'No account found with this email.');
+      console.warn(`[AUTH] ❌ No active user found for: ${email}`);
+      req.flash('error', 'Invalid email or password.');
       return res.redirect('/login');
     }
 
-    const otp = generateOTP();
-    await user.setOTP(otp);
-    await user.save();
-
-    // Send OTP email
-    await sendOTPEmail(user.email, otp);
-
-    // Store email in session for OTP verification step
-    req.session.pendingEmail = user.email;
-    req.flash('success', `OTP sent to ${user.email}. Valid for 5 minutes.`);
-    res.redirect('/verify-otp');
-  } catch (err) {
-    console.error('Login error:', err);
-    req.flash('error', 'Failed to send OTP. Check email configuration.');
-    res.redirect('/login');
-  }
-};
-
-// GET /verify-otp
-exports.getVerifyOTP = (req, res) => {
-  if (!req.session.pendingEmail) return res.redirect('/login');
-  res.render('auth/verify-otp', {
-    title: 'Verify OTP',
-    email: req.session.pendingEmail
-  });
-};
-
-// POST /verify-otp
-exports.postVerifyOTP = async (req, res) => {
-  try {
-    const { otp } = req.body;
-    const email = req.session.pendingEmail;
-    if (!email) return res.redirect('/login');
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      req.flash('error', 'Session expired. Please login again.');
-      return res.redirect('/login');
-    }
-
-    const valid = await user.verifyOTP(otp);
+    const valid = await user.verifyPassword(password);
     if (!valid) {
-      req.flash('error', 'Invalid or expired OTP. Please try again.');
-      return res.redirect('/verify-otp');
+      console.warn(`[AUTH] ❌ Wrong password for: ${email}`);
+      req.flash('error', 'Invalid email or password.');
+      return res.redirect('/login');
     }
 
-    // Clear OTP
-    user.clearOTP();
     user.lastLogin = new Date();
     await user.save();
 
-    // Create session
     req.session.user = {
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role
     };
-    delete req.session.pendingEmail;
 
+    console.log(`[AUTH] ✅ Login successful: ${user.email} (${user.role})`);
     req.flash('success', `Welcome back, ${user.name}!`);
     res.redirect('/dashboard');
   } catch (err) {
-    console.error('OTP verify error:', err);
-    req.flash('error', 'Verification failed. Please try again.');
-    res.redirect('/verify-otp');
+    console.error('[AUTH] ❌ Login error:', err);
+    req.flash('error', 'Login failed. Please try again.');
+    res.redirect('/login');
   }
 };
 
 // POST /logout
 exports.logout = (req, res) => {
+  const email = req.session.user?.email;
   req.session.destroy();
+  console.log(`[AUTH] 👋 Logged out: ${email}`);
   res.redirect('/login');
 };

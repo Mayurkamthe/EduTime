@@ -4,31 +4,23 @@ const bcrypt = require('bcryptjs');
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  password: { type: String, required: true },
   role: { type: String, enum: ['admin', 'hod'], default: 'hod' },
   department: { type: String, trim: true },
-  otp: { type: String }, // hashed
-  otpExpiry: { type: Date },
   isActive: { type: Boolean, default: true },
   lastLogin: { type: Date }
 }, { timestamps: true });
 
-// Hash OTP before saving
-UserSchema.methods.setOTP = async function(plainOTP) {
-  this.otp = await bcrypt.hash(plainOTP, 10);
-  this.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-};
+// Hash password before saving
+UserSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
 
-// Verify OTP
-UserSchema.methods.verifyOTP = async function(plainOTP) {
-  if (!this.otp || !this.otpExpiry) return false;
-  if (new Date() > this.otpExpiry) return false;
-  return await bcrypt.compare(plainOTP, this.otp);
-};
-
-// Clear OTP after use
-UserSchema.methods.clearOTP = function() {
-  this.otp = undefined;
-  this.otpExpiry = undefined;
+// Verify password
+UserSchema.methods.verifyPassword = async function(plainPassword) {
+  return await bcrypt.compare(plainPassword, this.password);
 };
 
 module.exports = mongoose.model('User', UserSchema);

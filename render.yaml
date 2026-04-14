@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: edutime
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PORT
+        value: 10000
