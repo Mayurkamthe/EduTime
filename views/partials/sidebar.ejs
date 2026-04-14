@@ -10,6 +10,10 @@
           <i class="bi bi-speedometer2"></i><span>Dashboard</span>
         </a>
       </li>
+
+      <li class="nav-item mt-2 px-2">
+        <small class="sidebar-section-label text-uppercase text-secondary" style="font-size:10px;letter-spacing:1px">Data</small>
+      </li>
       <li class="nav-item mt-1">
         <a href="/subjects" class="nav-link sidebar-link <%= locals.activePage==='subjects'?'active':'' %>">
           <i class="bi bi-book"></i><span>Subjects</span>
@@ -30,6 +34,7 @@
           <i class="bi bi-people"></i><span>Classes</span>
         </a>
       </li>
+
       <li class="nav-item mt-2 px-2">
         <small class="sidebar-section-label text-uppercase text-secondary" style="font-size:10px;letter-spacing:1px">Timetable</small>
       </li>
@@ -48,6 +53,8 @@
           <i class="bi bi-door-open"></i><span>Room TT</span>
         </a>
       </li>
+
+      <% if (user && user.role === 'admin') { %>
       <li class="nav-item mt-2 px-2">
         <small class="sidebar-section-label text-uppercase text-secondary" style="font-size:10px;letter-spacing:1px">Admin</small>
       </li>
@@ -56,6 +63,7 @@
           <i class="bi bi-gear"></i><span>Settings</span>
         </a>
       </li>
+      <% } %>
     </ul>
   </nav>
   <div class="sidebar-footer px-3 py-3 border-top border-secondary flex-shrink-0">
@@ -63,7 +71,9 @@
       <i class="bi bi-person-circle fs-5 flex-shrink-0"></i>
       <div class="overflow-hidden">
         <div class="fw-semibold text-truncate" style="font-size:13px"><%= user.name %></div>
-        <small class="text-secondary" style="font-size:11px"><%= user.role.toUpperCase() %></small>
+        <small class="text-secondary" style="font-size:11px">
+          <%= user.role === 'admin' ? '⚙️ Admin' : '🎓 HoD' %>
+        </small>
       </div>
     </div>
     <form action="/logout" method="POST">

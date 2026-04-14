@@ -1,15 +1,15 @@
-const Timetable = require('../models/Timetable');
-const Class = require('../models/Class');
-const Subject = require('../models/Subject');
-const Professor = require('../models/Professor');
-const Room = require('../models/Room');
-const Settings = require('../models/Settings');
+const Timetable  = require('../models/Timetable');
+const Class      = require('../models/Class');
+const Subject    = require('../models/Subject');
+const Professor  = require('../models/Professor');
+const Room       = require('../models/Room');
+const Settings   = require('../models/Settings');
 const TimetableGenerator = require('../services/timetableGenerator');
 const { generateDaySlots } = require('../services/slotEngine');
 
 // GET /timetable
 exports.index = async (req, res) => {
-  const classes = await Class.find({ isActive: true }).sort('year division');
+  const classes    = await Class.find({ isActive: true }).sort('year division');
   const timetables = await Timetable.find({ isGenerated: true }).populate('class', 'year division');
   res.render('timetable/index', { title: 'Timetables', classes, timetables });
 };
@@ -18,20 +18,36 @@ exports.index = async (req, res) => {
 exports.generate = async (req, res) => {
   try {
     const { classId, semester, academicYear, regenerate } = req.body;
+    console.log(`[TIMETABLE] Generate request — class:${classId} sem:${semester} year:${academicYear}`);
 
+    // Load class with subjects populated
     const [classDoc, settings] = await Promise.all([
       Class.findById(classId).populate('subjects'),
       Settings.findOne()
     ]);
-    if (!classDoc) { req.flash('error', 'Class not found.'); return res.redirect('/timetable'); }
-    if (!settings) { req.flash('error', 'Configure settings first.'); return res.redirect('/settings'); }
-    if (!classDoc.subjects.length) { req.flash('error', 'No subjects assigned to this class.'); return res.redirect('/timetable'); }
 
-    // Check for existing (unless regenerating)
+    if (!classDoc) {
+      req.flash('error', 'Class not found.');
+      return res.redirect('/timetable');
+    }
+    if (!settings) {
+      req.flash('error', 'Please configure college settings first.');
+      return res.redirect('/settings');
+    }
+    if (!classDoc.subjects || !classDoc.subjects.length) {
+      req.flash('error', `No subjects assigned to ${classDoc.year}-${classDoc.division}. Please assign subjects first.`);
+      return res.redirect('/timetable');
+    }
+    if (!settings.workingDays || !settings.workingDays.length) {
+      req.flash('error', 'No working days configured. Please update Settings.');
+      return res.redirect('/settings');
+    }
+
+    // Check existing
     if (!regenerate) {
-      const existing = await Timetable.findOne({ class: classId, semester, academicYear });
+      const existing = await Timetable.findOne({ class: classId, semester: parseInt(semester), academicYear });
       if (existing) {
-        req.flash('error', 'Timetable already exists. Use Regenerate option.');
+        req.flash('error', 'Timetable already exists for this class/semester. Tick "Force Regenerate" to overwrite.');
         return res.redirect('/timetable');
       }
     }
@@ -42,49 +58,68 @@ exports.generate = async (req, res) => {
       Timetable.find({ isGenerated: true, class: { $ne: classId } })
     ]);
 
-    const generator = new TimetableGenerator(settings, classDoc, classDoc.subjects, professors, rooms, otherTimetables);
-    const slots = generator.generate();
-    const conflicts = generator.validateResult();
+    console.log(`[TIMETABLE] Loaded — professors:${professors.length}, rooms:${rooms.length}, subjects:${classDoc.subjects.length}`);
 
-    // Save timetable
+    if (!professors.length) {
+      req.flash('error', 'No active professors found. Please add professors first.');
+      return res.redirect('/timetable');
+    }
+    if (!rooms.length) {
+      req.flash('error', 'No active rooms found. Please add rooms first.');
+      return res.redirect('/timetable');
+    }
+
+    const generator = new TimetableGenerator(settings, classDoc, classDoc.subjects, professors, rooms, otherTimetables);
+    const slots     = generator.generate();
+    const conflicts = generator.validateResult();
+    const warnings  = generator.getWarnings();
+
+    if (!slots.length) {
+      req.flash('error', 'Timetable generation produced no slots. Check that professors are assigned to subjects and rooms exist.');
+      return res.redirect('/timetable');
+    }
+
+    // Upsert timetable
     const filter = { class: classId, semester: parseInt(semester), academicYear };
-    const update = {
+    await Timetable.findOneAndUpdate(filter, {
+      ...filter,
       slots,
       isGenerated: true,
       generatedAt: new Date(),
-      generatedBy: req.session.user._id,
-      ...filter
-    };
+      generatedBy: req.session.user._id
+    }, { upsert: true, new: true });
 
-    await Timetable.findOneAndUpdate(filter, update, { upsert: true, new: true });
+    console.log(`[TIMETABLE] ✅ Saved — ${slots.length} slots, ${conflicts.length} conflicts, ${warnings.length} warnings`);
 
     if (conflicts.length) {
-      req.flash('error', `Timetable generated with ${conflicts.length} conflict(s): ${conflicts.slice(0,3).join('; ')}`);
+      req.flash('error', `Generated with ${conflicts.length} conflict(s): ${conflicts.slice(0,3).join('; ')}`);
+    } else if (warnings.length) {
+      req.flash('success', `Timetable generated for ${classDoc.year}-${classDoc.division}. Note: ${warnings.slice(0,2).join('; ')}`);
     } else {
-      req.flash('success', `Timetable for ${classDoc.year}-${classDoc.division} generated successfully.`);
+      req.flash('success', `Timetable for ${classDoc.year}-${classDoc.division} generated successfully!`);
     }
+
     res.redirect(`/timetable/class/${classId}?semester=${semester}&year=${academicYear}`);
   } catch (err) {
-    console.error('Generate error:', err);
-    req.flash('error', 'Timetable generation failed: ' + err.message);
+    console.error('[TIMETABLE] ❌ Generation error:', err.message);
+    req.flash('error', 'Generation failed: ' + err.message);
     res.redirect('/timetable');
   }
 };
 
-// GET /timetable/class/:id - Division timetable view
+// GET /timetable/class/:id
 exports.viewClass = async (req, res) => {
   try {
     const { semester, year } = req.query;
     const classDoc = await Class.findById(req.params.id);
     if (!classDoc) { req.flash('error', 'Class not found.'); return res.redirect('/timetable'); }
 
-    const settings = await Settings.findOne() || {};
-    const daySlots = generateDaySlots(settings);
-
+    const settings  = await Settings.findOne() || {};
+    const daySlots  = generateDaySlots(settings);
     const timetable = await Timetable.findOne({
       class: req.params.id,
       ...(semester ? { semester: parseInt(semester) } : {}),
-      ...(year ? { academicYear: year } : {})
+      ...(year     ? { academicYear: year }          : {})
     }).populate('slots.subject slots.professor slots.room');
 
     res.render('timetable/class-view', {
@@ -99,18 +134,16 @@ exports.viewClass = async (req, res) => {
   }
 };
 
-// GET /timetable/professor/:id - Faculty timetable view
+// GET /timetable/professor/:id
 exports.viewProfessor = async (req, res) => {
   try {
-    const { semester, year } = req.query;
-    const settings = await Settings.findOne() || {};
-    const daySlots = generateDaySlots(settings);
-    const professor = await Professor.findById(req.params.id);
+    const settings   = await Settings.findOne() || {};
+    const daySlots   = generateDaySlots(settings);
+    const professor  = await Professor.findById(req.params.id);
     if (!professor) { req.flash('error', 'Professor not found.'); return res.redirect('/timetable'); }
 
-    // Get all timetables and filter slots for this professor
     const timetables = await Timetable.find({ isGenerated: true }).populate('slots.subject slots.room class');
-    const profSlots = [];
+    const profSlots  = [];
     for (const tt of timetables) {
       for (const slot of tt.slots) {
         if (slot.professor && slot.professor.toString() === req.params.id) {
@@ -131,16 +164,16 @@ exports.viewProfessor = async (req, res) => {
   }
 };
 
-// GET /timetable/room/:id - Room timetable view
+// GET /timetable/room/:id
 exports.viewRoom = async (req, res) => {
   try {
-    const settings = await Settings.findOne() || {};
-    const daySlots = generateDaySlots(settings);
-    const room = await Room.findById(req.params.id);
+    const settings  = await Settings.findOne() || {};
+    const daySlots  = generateDaySlots(settings);
+    const room      = await Room.findById(req.params.id);
     if (!room) { req.flash('error', 'Room not found.'); return res.redirect('/timetable'); }
 
     const timetables = await Timetable.find({ isGenerated: true }).populate('slots.subject slots.professor');
-    const roomSlots = [];
+    const roomSlots  = [];
     for (const tt of timetables) {
       for (const slot of tt.slots) {
         if (slot.room && slot.room.toString() === req.params.id) {
@@ -161,7 +194,7 @@ exports.viewRoom = async (req, res) => {
   }
 };
 
-// GET /timetable/all-professors - list view
+// GET /timetable/all-professors
 exports.allProfessors = async (req, res) => {
   const professors = await Professor.find({ isActive: true }).sort('name');
   res.render('timetable/professors-list', { title: 'Faculty Timetables', professors });

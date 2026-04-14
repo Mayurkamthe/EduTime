@@ -1,9 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('./middleware');
+const { requireAuth, requireAdmin } = require('./middleware');
 const c = require('../controllers/settingsController');
+
+// GET settings: both roles can view
 router.get('/', requireAuth, c.getSettings);
-router.post('/', requireAuth, c.postSettings);
-router.post('/users', requireAuth, c.postCreateUser);
-router.delete('/users/:id', requireAuth, c.deleteUser);
+
+// POST/DELETE: admin only
+router.post('/', requireAdmin, c.postSettings);
+router.post('/users', requireAdmin, c.postCreateUser);
+router.delete('/users/:id', requireAdmin, c.deleteUser);
+
 module.exports = router;

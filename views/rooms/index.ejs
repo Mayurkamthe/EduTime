@@ -1,12 +1,14 @@
 <%- include('../partials/layout-start') %>
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h5 class="section-title mb-0">Rooms</h5>
-  <a href="/rooms/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Room</a>
+  <% if (user.role === 'admin') { %>
+    <a href="/rooms/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Room</a>
+  <% } %>
 </div>
 <div class="page-card">
   <% if (!rooms.length) { %>
     <div class="text-center py-5 text-muted">
-      <i class="bi bi-building fs-1 d-block mb-2"></i>No rooms found. <a href="/rooms/create">Add one</a>.
+      <i class="bi bi-building fs-1 d-block mb-2"></i>No rooms found.<% if (user.role === 'admin') { %> <a href="/rooms/create">Add one</a>.<% } %>
     </div>
   <% } else { %>
   <div class="table-responsive">
@@ -24,11 +26,13 @@
           <td><%= r.floor || '-' %></td>
           <td><%= r.building || '-' %></td>
           <td>
-            <a href="/rooms/<%= r._id %>/edit" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i></a>
             <a href="/timetable/room/<%= r._id %>" class="btn btn-outline-success btn-sm"><i class="bi bi-calendar3"></i></a>
+            <% if (user.role === 'admin') { %>
+            <a href="/rooms/<%= r._id %>/edit" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i></a>
             <form action="/rooms/<%= r._id %>?_method=DELETE" method="POST" class="d-inline">
               <button class="btn btn-outline-danger btn-sm confirm-delete"><i class="bi bi-trash"></i></button>
             </form>
+            <% } %>
           </td>
         </tr>
         <% }) %>

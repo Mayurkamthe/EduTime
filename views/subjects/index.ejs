@@ -1,12 +1,14 @@
 <%- include('../partials/layout-start') %>
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h5 class="section-title mb-0">Subjects</h5>
-  <a href="/subjects/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Subject</a>
+  <% if (user.role === 'admin') { %>
+    <a href="/subjects/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Subject</a>
+  <% } %>
 </div>
 <div class="page-card">
   <% if (!subjects.length) { %>
     <div class="text-center py-5 text-muted">
-      <i class="bi bi-book fs-1 d-block mb-2"></i>No subjects found. <a href="/subjects/create">Add one</a>.
+      <i class="bi bi-book fs-1 d-block mb-2"></i>No subjects found.<% if (user.role === 'admin') { %> <a href="/subjects/create">Add one</a>.<% } %>
     </div>
   <% } else { %>
   <div class="table-responsive">
@@ -14,7 +16,8 @@
       <thead class="table-dark">
         <tr>
           <th>#</th><th>Code</th><th>Name</th><th>Year</th><th>Type</th>
-          <th>Weekly Hrs</th><th>Sem</th><th>Actions</th>
+          <th>Weekly Hrs</th><th>Sem</th>
+          <% if (user.role === 'admin') { %><th>Actions</th><% } %>
         </tr>
       </thead>
       <tbody>
@@ -30,12 +33,14 @@
           </td>
           <td><%= s.weeklyHours %> hrs</td>
           <td><%= s.semester || '-' %></td>
+          <% if (user.role === 'admin') { %>
           <td>
             <a href="/subjects/<%= s._id %>/edit" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i></a>
             <form action="/subjects/<%= s._id %>?_method=DELETE" method="POST" class="d-inline">
               <button class="btn btn-outline-danger btn-sm confirm-delete"><i class="bi bi-trash"></i></button>
             </form>
           </td>
+          <% } %>
         </tr>
         <% }) %>
       </tbody>
